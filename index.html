@@ -3,104 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khôi phục mật khẩu - SimpleFPS</title>
+    <title>Đổi Mật Khẩu Bằng Mã OTP - SimpleFPS</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            background-color: #1a1a1a; color: #ffffff; font-family: 'Segoe UI', sans-serif;
-            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
-        }
-        .container {
-            background-color: #2d2d2d; padding: 40px 30px; border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5); width: 320px; text-align: center;
-        }
-        h2 { margin-top: 0; color: #00ff88; font-size: 24px; }
-        p { font-size: 14px; color: #aaaaaa; margin-bottom: 20px; }
-        input {
-            width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #444;
-            border-radius: 6px; background-color: #1a1a1a; color: white; outline: none;
-        }
+        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #2d2d2d; padding: 35px 30px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
+        h2 { color: #00ff88; margin-top: 0; }
+        p { font-size: 13px; color: #aaa; margin-bottom: 25px; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #555; background: #111; color: white; outline: none; }
         input:focus { border-color: #00ff88; }
-        button {
-            background-color: #00ff88; color: #000; border: none; padding: 12px;
-            border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold;
-            font-size: 16px; margin-top: 15px; transition: 0.2s;
-        }
-        button:hover { background-color: #00cc6a; }
-        #message { margin-top: 20px; font-size: 14px; font-weight: bold; }
+        button { width: 100%; padding: 12px; background: #00ff88; color: black; border: none; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; border-radius: 6px; transition: 0.2s;}
+        button:hover { background: #00cc6a; }
+        #msg { margin-top: 20px; font-size: 14px; font-weight: bold; }
     </style>
 </head>
 <body>
+    <div class="box" id="main-box">
+        <h2>Nhập Mã Xác Nhận</h2>
+        <p>Vui lòng kiểm tra Email để lấy mã OTP (6 số).</p>
 
-    <div class="container" id="reset-container">
-        <h2>Tạo Mật Khẩu Mới</h2>
-        <p>Hệ thống bảo mật SimpleFPS</p>
-        
-        <input type="password" id="new-password" placeholder="Mật khẩu mới (ít nhất 6 ký tự)">
-        <input type="password" id="confirm-password" placeholder="Nhập lại mật khẩu mới">
-        
-        <button id="submit-btn" onclick="updatePassword()">Xác Nhận Đổi</button>
-        <div id="message"></div>
+        <input type="email" id="email" placeholder="Nhập Email của bạn">
+        <input type="text" id="otp" placeholder="Mã xác nhận OTP (6 số)">
+        <input type="password" id="new-pass" placeholder="Mật khẩu mới (ít nhất 6 ký tự)">
+        <input type="password" id="confirm-pass" placeholder="Nhập lại mật khẩu mới">
+
+        <button onclick="changePass()">Đổi Mật Khẩu</button>
+        <div id="msg"></div>
     </div>
 
     <script>
-        try {
-            // URL và Key được lấy tự động từ SupabaseManager.cs của bạn
-            const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
-            const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
+        // Khởi tạo Supabase
+        const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Khởi tạo kết nối Supabase
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        async function changePass() {
+            const email = document.getElementById('email').value.trim();
+            const otp = document.getElementById('otp').value.trim();
+            const pass = document.getElementById('new-pass').value;
+            const confirmPass = document.getElementById('confirm-pass').value;
+            const msg = document.getElementById('msg');
 
-            // Kiểm tra link có hợp lệ không (Hỗ trợ cả Hash và Query PKCE)
-            window.onload = () => {
-                const url = window.location.href;
-                if (!url.includes('type=recovery') && !url.includes('code=')) {
-                    document.getElementById('message').style.color = '#ff4d4d';
-                    document.getElementById('message').innerText = "Cảnh báo: Không tìm thấy phiên khôi phục hợp lệ. Hãy thử mở lại link từ Email.";
-                }
-            };
+            // Kiểm tra nhập liệu
+            if(!email || !otp) { msg.style.color = '#ff4d4d'; msg.innerText = "Vui lòng nhập Email và Mã OTP!"; return; }
+            if(pass.length < 6) { msg.style.color = '#ff4d4d'; msg.innerText = "Mật khẩu phải từ 6 ký tự trở lên!"; return; }
+            if(pass !== confirmPass) { msg.style.color = '#ff4d4d'; msg.innerText = "Hai mật khẩu không khớp nhau!"; return; }
 
-            // Hàm được gọi khi bấm nút
-            async function updatePassword() {
-                const pass = document.getElementById('new-password').value;
-                const confirmPass = document.getElementById('confirm-password').value;
-                const msg = document.getElementById('message');
+            msg.style.color = '#00ff88'; 
+            msg.innerText = "Đang xử lý...";
 
-                if (pass.length < 6) {
-                    msg.style.color = '#ff4d4d'; 
-                    msg.innerText = "Mật khẩu phải có ít nhất 6 ký tự!";
-                    return;
-                }
+            try {
+                // Bước 1: Gửi Email và Mã OTP lên Supabase để xác minh
+                const { data, error: verifyError } = await supabase.auth.verifyOtp({
+                    email: email,
+                    token: otp,
+                    type: 'recovery'
+                });
 
-                if (pass !== confirmPass) {
-                    msg.style.color = '#ff4d4d'; 
-                    msg.innerText = "Hai mật khẩu không khớp nhau!";
-                    return;
-                }
+                if (verifyError) throw verifyError;
 
-                msg.style.color = '#00ff88'; 
-                msg.innerText = "Đang kết nối tới máy chủ, vui lòng đợi...";
+                // Bước 2: Nếu mã OTP đúng, tiến hành cập nhật mật khẩu mới
+                const { error: updateError } = await supabase.auth.updateUser({
+                    password: pass
+                });
 
-                // Bắn lệnh lên Supabase để đổi Pass
-                const { data, error } = await supabase.auth.updateUser({ password: pass });
+                if (updateError) throw updateError;
 
-                if (error) {
-                    msg.style.color = '#ff4d4d';
-                    msg.innerText = "Lỗi từ Server: " + error.message;
-                    console.error("Supabase Error:", error);
+                // Thành công
+                msg.style.color = '#00ff88';
+                msg.innerText = "✅ ĐỔI MẬT KHẨU THÀNH CÔNG! Bạn có thể đóng trang này và vào Game đăng nhập.";
+                
+                // Ẩn các ô nhập để nhìn cho gọn
+                document.querySelectorAll('input, button').forEach(el => el.style.display = 'none');
+
+            } catch (err) {
+                msg.style.color = '#ff4d4d';
+                
+                // Dịch một số lỗi tiếng Anh sang tiếng Việt cho dễ hiểu
+                if(err.message.includes("Token has expired or is invalid")) {
+                    msg.innerText = "Lỗi: Mã OTP sai hoặc đã hết hạn!";
+                } else if(err.message.includes("New password should be different")) {
+                    msg.innerText = "Lỗi: Mật khẩu mới không được trùng mật khẩu cũ!";
                 } else {
-                    msg.style.color = '#00ff88';
-                    msg.innerText = "✅ ĐỔI MẬT KHẨU THÀNH CÔNG! Hãy quay lại Game để đăng nhập.";
-                    
-                    document.getElementById('new-password').style.display = 'none';
-                    document.getElementById('confirm-password').style.display = 'none';
-                    document.getElementById('submit-btn').style.display = 'none';
+                    msg.innerText = "Lỗi: " + err.message;
                 }
             }
-        } catch (err) {
-            document.getElementById('message').style.color = '#ff4d4d';
-            document.getElementById('message').innerText = "Lỗi hệ thống Web: " + err.message;
         }
     </script>
 </body>
