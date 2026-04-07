@@ -89,115 +89,132 @@
     <script>
         const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Kiểm tra xem thư viện Supabase đã load được chưa
+        if (!window.supabase) {
+            document.getElementById('player-table-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">LỖI: Không thể tải thư viện Supabase. Hãy kiểm tra kết nối mạng hoặc tắt tiện ích chặn quảng cáo (Adblocker).</td></tr>';
+        } else {
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Tải danh sách người chơi khi mở web
+            fetchPlayers();
 
-        // Tải danh sách người chơi khi mở web
-        fetchPlayers();
-
-        async function fetchPlayers() {
-            const tbody = document.getElementById('player-table-body');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-emerald-400">Đang tải dữ liệu...</td></tr>';
-            
-            const { data, error } = await supabase.from('profiles').select('*').order('gold', { ascending: false });
-            
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = '';
-            data.forEach(player => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-750 transition duration-150';
-                tr.innerHTML = `
-                    <td class="p-4 font-bold text-white">${player.username}</td>
-                    <td class="p-4 text-yellow-400 font-bold">${player.gold}</td>
-                    <td class="p-4 text-blue-400 font-bold">${player.rank_points}</td>
-                    <td class="p-4 text-gray-300">${player.current_character}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded mr-2">Sửa</button>
-                        <button onclick="viewHistory('${player.id}', '${player.username}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">Lịch sử</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Mở bảng Sửa
-        function openEditModal(id, username, gold, rank) {
-            document.getElementById('edit-id').value = id;
-            document.getElementById('edit-username').value = username;
-            document.getElementById('edit-gold').value = gold;
-            document.getElementById('edit-rank').value = rank;
-            document.getElementById('edit-modal').classList.remove('hidden');
-        }
-
-        // Lưu thông tin chỉnh sửa lên database
-        async function savePlayer() {
-            const id = document.getElementById('edit-id').value;
-            const username = document.getElementById('edit-username').value;
-            const gold = document.getElementById('edit-gold').value;
-            const rank = document.getElementById('edit-rank').value;
-
-            const { error } = await supabase
-                .from('profiles')
-                .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
-                .eq('id', id);
-
-            if (error) {
-                alert('Lỗi cập nhật: ' + error.message);
-            } else {
-                closeModal('edit-modal');
-                fetchPlayers(); // Tải lại bảng sau khi lưu
-            }
-        }
-
-        // Mở bảng Lịch sử trận đấu
-        async function viewHistory(userId, username) {
-            document.getElementById('history-title').innerText = `Lịch sử đấu của: ${username}`;
-            document.getElementById('history-modal').classList.remove('hidden');
-            const tbody = document.getElementById('history-table-body');
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-blue-400">Đang tìm dữ liệu...</td></tr>';
-
-            const { data, error } = await supabase
-                .from('match_history')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
-                return;
-            }
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Người chơi này chưa đánh trận nào.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = '';
-            data.forEach(match => {
-                let resultColor = match.result === 'Win' ? 'text-emerald-400' : (match.result === 'Quit' ? 'text-red-400' : 'text-gray-400');
-                let resultText = match.result === 'Win' ? 'THẮNG' : (match.result === 'Quit' ? 'THOÁT' : 'THUA');
-                let time = new Date(match.created_at).toLocaleString('vi-VN');
+            async function fetchPlayers() {
+                const tbody = document.getElementById('player-table-body');
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-emerald-400">Đang tải dữ liệu...</td></tr>';
                 
-                let mins = Math.floor(match.play_time_seconds / 60);
-                let secs = Math.floor(match.play_time_seconds % 60);
+                try {
+                    const { data, error } = await supabase.from('profiles').select('*').order('gold', { ascending: false });
+                    
+                    if (error) {
+                        console.error("Lỗi Supabase:", error);
+                        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Lỗi từ máy chủ Supabase: ${error.message}</td></tr>`;
+                        return;
+                    }
 
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-750">
-                        <td class="p-3 font-bold ${resultColor}">${resultText}</td>
-                        <td class="p-3">${match.kills} / ${match.deaths}</td>
-                        <td class="p-3">${mins}m ${secs}s</td>
-                        <td class="p-3 text-sm text-gray-400">${time}</td>
-                    </tr>
-                `;
-            });
-        }
+                    // NẾU BẢNG TRỐNG (DO VỪA CHẠY LỆNH DROP TABLE)
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-yellow-400 font-bold">Chưa có người chơi nào trong hệ thống!<br><span class="text-sm text-gray-400">Hãy mở game lên và đăng ký 1 tài khoản mới nhé.</span></td></tr>`;
+                        return;
+                    }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
+                    tbody.innerHTML = '';
+                    data.forEach(player => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-750 transition duration-150';
+                        tr.innerHTML = `
+                            <td class="p-4 font-bold text-white">${player.username}</td>
+                            <td class="p-4 text-yellow-400 font-bold">${player.gold}</td>
+                            <td class="p-4 text-blue-400 font-bold">${player.rank_points}</td>
+                            <td class="p-4 text-gray-300">${player.current_character || 'Char_Adam'}</td>
+                            <td class="p-4 text-center">
+                                <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded mr-2">Sửa</button>
+                                <button onclick="viewHistory('${player.id}', '${player.username}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">Lịch sử</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } catch (err) {
+                    console.error("Lỗi mã Javascript:", err);
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Lỗi kĩ thuật: ${err.message}</td></tr>`;
+                }
+            }
+
+            // Mở bảng Sửa
+            window.openEditModal = function(id, username, gold, rank) {
+                document.getElementById('edit-id').value = id;
+                document.getElementById('edit-username').value = username;
+                document.getElementById('edit-gold').value = gold;
+                document.getElementById('edit-rank').value = rank;
+                document.getElementById('edit-modal').classList.remove('hidden');
+            }
+
+            // Lưu thông tin chỉnh sửa lên database
+            window.savePlayer = async function() {
+                const id = document.getElementById('edit-id').value;
+                const username = document.getElementById('edit-username').value;
+                const gold = document.getElementById('edit-gold').value;
+                const rank = document.getElementById('edit-rank').value;
+
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
+                    .eq('id', id);
+
+                if (error) {
+                    alert('Lỗi cập nhật: ' + error.message);
+                } else {
+                    closeModal('edit-modal');
+                    fetchPlayers(); // Tải lại bảng sau khi lưu
+                }
+            }
+
+            // Mở bảng Lịch sử trận đấu
+            window.viewHistory = async function(userId, username) {
+                document.getElementById('history-title').innerText = `Lịch sử đấu của: ${username}`;
+                document.getElementById('history-modal').classList.remove('hidden');
+                const tbody = document.getElementById('history-table-body');
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-blue-400">Đang tìm dữ liệu...</td></tr>';
+
+                const { data, error } = await supabase
+                    .from('match_history')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                if (error) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
+                    return;
+                }
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Người chơi này chưa đánh trận nào.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                data.forEach(match => {
+                    let resultColor = match.result === 'Win' ? 'text-emerald-400' : (match.result === 'Quit' ? 'text-red-400' : 'text-gray-400');
+                    let resultText = match.result === 'Win' ? 'THẮNG' : (match.result === 'Quit' ? 'THOÁT' : 'THUA');
+                    let time = new Date(match.created_at).toLocaleString('vi-VN');
+                    
+                    let mins = Math.floor(match.play_time_seconds / 60);
+                    let secs = Math.floor(match.play_time_seconds % 60);
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-750">
+                            <td class="p-3 font-bold ${resultColor}">${resultText}</td>
+                            <td class="p-3">${match.kills} / ${match.deaths}</td>
+                            <td class="p-3">${mins}m ${secs}s</td>
+                            <td class="p-3 text-sm text-gray-400">${time}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            window.closeModal = function(modalId) {
+                document.getElementById(modalId).classList.add('hidden');
+            }
         }
     </script>
 </body>
