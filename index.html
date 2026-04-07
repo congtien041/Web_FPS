@@ -3,87 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đổi Mật Khẩu Bằng Mã OTP</title>
+    <title>Quản Trị SimpleFPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: #2d2d2d; padding: 35px 30px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
-        h2 { color: #00ff88; margin-top: 0; }
-        p { font-size: 13px; color: #aaa; margin-bottom: 25px; }
-        input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #555; background: #111; color: white; outline: none; }
-        input:focus { border-color: #00ff88; }
-        button { width: 100%; padding: 12px; background: #00ff88; color: black; border: none; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; border-radius: 6px; transition: 0.2s;}
-        button:hover { background: #00cc6a; }
-        #msg { margin-top: 20px; font-size: 14px; font-weight: bold; }
+        /* Tùy chỉnh thanh cuộn cho đẹp */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
     </style>
 </head>
-<body>
-    <div class="box">
-        <h2>Nhập Mã Xác Nhận</h2>
-        <p>Vui lòng kiểm tra Email để lấy mã OTP.</p>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased p-6">
 
-        <input type="email" id="email" placeholder="Nhập Email của bạn">
-        <input type="text" id="otp" placeholder="Mã xác nhận OTP (8 số)">
-        <input type="password" id="new-pass" placeholder="Mật khẩu mới (ít nhất 6 ký tự)">
-        <input type="password" id="confirm-pass" placeholder="Nhập lại mật khẩu mới">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-3xl font-bold text-emerald-400">SimpleFPS Admin Dashboard</h1>
+            <button onclick="fetchPlayers()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded shadow transition">
+                🔄 Làm mới dữ liệu
+            </button>
+        </div>
 
-        <button onclick="changePass()">Đổi Mật Khẩu</button>
-        <div id="msg"></div>
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-700 text-gray-300 text-sm uppercase tracking-wider">
+                        <th class="p-4">Username</th>
+                        <th class="p-4">Vàng</th>
+                        <th class="p-4">Rank Points</th>
+                        <th class="p-4">Nhân vật đang dùng</th>
+                        <th class="p-4 text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="player-table-body" class="divide-y divide-gray-700">
+                    <tr><td colspan="5" class="p-4 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-6 border border-emerald-500">
+            <h2 class="text-xl font-bold text-emerald-400 mb-4">Chỉnh sửa người chơi</h2>
+            <input type="hidden" id="edit-id">
+            
+            <label class="block text-sm text-gray-400 mb-1">Username</label>
+            <input type="text" id="edit-username" class="w-full bg-gray-900 border border-gray-600 rounded p-2 mb-4 text-white focus:border-emerald-500 outline-none">
+            
+            <label class="block text-sm text-gray-400 mb-1">Vàng</label>
+            <input type="number" id="edit-gold" class="w-full bg-gray-900 border border-gray-600 rounded p-2 mb-4 text-white focus:border-emerald-500 outline-none">
+            
+            <label class="block text-sm text-gray-400 mb-1">Điểm Rank</label>
+            <input type="number" id="edit-rank" class="w-full bg-gray-900 border border-gray-600 rounded p-2 mb-6 text-white focus:border-emerald-500 outline-none">
+            
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('edit-modal')" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded">Hủy</button>
+                <button onclick="savePlayer()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold text-white">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-3xl p-6 border border-blue-500 flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-blue-400" id="history-title">Lịch sử đấu</h2>
+                <button onclick="closeModal('history-modal')" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 pr-2">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-700 text-gray-300 text-sm">
+                            <th class="p-3">Kết quả</th>
+                            <th class="p-3">Kills/Deaths</th>
+                            <th class="p-3">Thời gian chơi</th>
+                            <th class="p-3">Ngày giờ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="divide-y divide-gray-700">
+                        </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
-        async function changePass() {
-            const msg = document.getElementById('msg');
-            try {
-                const email = document.getElementById('email').value.trim();
-                const otp = document.getElementById('otp').value.trim();
-                const pass = document.getElementById('new-pass').value;
-                const confirmPass = document.getElementById('confirm-pass').value;
+        const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-                // Kiểm tra xem đã nhập đủ chưa (Nếu thiếu, ngay lập tức báo chữ đỏ)
-                if(!email || !otp) { msg.style.color = '#ff4d4d'; msg.innerText = "Vui lòng nhập Email và Mã OTP!"; return; }
-                if(pass.length < 6) { msg.style.color = '#ff4d4d'; msg.innerText = "Mật khẩu phải từ 6 ký tự trở lên!"; return; }
-                if(pass !== confirmPass) { msg.style.color = '#ff4d4d'; msg.innerText = "Hai mật khẩu không khớp nhau!"; return; }
+        // Tải danh sách người chơi khi mở web
+        fetchPlayers();
 
-                msg.style.color = '#00ff88'; 
-                msg.innerText = "Đang kết nối tới Supabase, vui lòng đợi...";
-
-                // Khởi tạo Supabase ngay bên trong nút bấm để chống lỗi
-                const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
-                const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
-                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-                // Gửi mã OTP lên để kiểm tra
-                const { data, error: verifyError } = await supabase.auth.verifyOtp({
-                    email: email,
-                    token: otp,
-                    type: 'recovery'
-                });
-
-                if (verifyError) throw verifyError;
-
-                // Đổi mật khẩu
-                const { error: updateError } = await supabase.auth.updateUser({
-                    password: pass
-                });
-
-                if (updateError) throw updateError;
-
-                // Thành công
-                msg.style.color = '#00ff88';
-                msg.innerText = "✅ ĐỔI MẬT KHẨU THÀNH CÔNG! Hãy tắt web và vào Game đăng nhập.";
-                
-            } catch (err) {
-                // Bắt mọi thể loại lỗi và in ra màn hình
-                msg.style.color = '#ff4d4d';
-                if(err.message.includes("Token has expired or is invalid")) {
-                    msg.innerText = "Lỗi: Mã OTP sai hoặc đã hết hạn (Hãy vào game bấm gửi lại mail mới)!";
-                } else if(err.message.includes("New password should be different")) {
-                    msg.innerText = "Lỗi: Mật khẩu mới không được giống y hệt mật khẩu cũ!";
-                } else {
-                    msg.innerText = "Lỗi: " + err.message;
-                }
+        async function fetchPlayers() {
+            const tbody = document.getElementById('player-table-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-emerald-400">Đang tải dữ liệu...</td></tr>';
+            
+            const { data, error } = await supabase.from('profiles').select('*').order('gold', { ascending: false });
+            
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
+                return;
             }
+
+            tbody.innerHTML = '';
+            data.forEach(player => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-750 transition duration-150';
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-white">${player.username}</td>
+                    <td class="p-4 text-yellow-400 font-bold">${player.gold}</td>
+                    <td class="p-4 text-blue-400 font-bold">${player.rank_points}</td>
+                    <td class="p-4 text-gray-300">${player.current_character}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded mr-2">Sửa</button>
+                        <button onclick="viewHistory('${player.id}', '${player.username}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">Lịch sử</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Mở bảng Sửa
+        function openEditModal(id, username, gold, rank) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-username').value = username;
+            document.getElementById('edit-gold').value = gold;
+            document.getElementById('edit-rank').value = rank;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        // Lưu thông tin chỉnh sửa lên database
+        async function savePlayer() {
+            const id = document.getElementById('edit-id').value;
+            const username = document.getElementById('edit-username').value;
+            const gold = document.getElementById('edit-gold').value;
+            const rank = document.getElementById('edit-rank').value;
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
+                .eq('id', id);
+
+            if (error) {
+                alert('Lỗi cập nhật: ' + error.message);
+            } else {
+                closeModal('edit-modal');
+                fetchPlayers(); // Tải lại bảng sau khi lưu
+            }
+        }
+
+        // Mở bảng Lịch sử trận đấu
+        async function viewHistory(userId, username) {
+            document.getElementById('history-title').innerText = `Lịch sử đấu của: ${username}`;
+            document.getElementById('history-modal').classList.remove('hidden');
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-blue-400">Đang tìm dữ liệu...</td></tr>';
+
+            const { data, error } = await supabase
+                .from('match_history')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Người chơi này chưa đánh trận nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(match => {
+                let resultColor = match.result === 'Win' ? 'text-emerald-400' : (match.result === 'Quit' ? 'text-red-400' : 'text-gray-400');
+                let resultText = match.result === 'Win' ? 'THẮNG' : (match.result === 'Quit' ? 'THOÁT' : 'THUA');
+                let time = new Date(match.created_at).toLocaleString('vi-VN');
+                
+                let mins = Math.floor(match.play_time_seconds / 60);
+                let secs = Math.floor(match.play_time_seconds % 60);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-750">
+                        <td class="p-3 font-bold ${resultColor}">${resultText}</td>
+                        <td class="p-3">${match.kills} / ${match.deaths}</td>
+                        <td class="p-3">${mins}m ${secs}s</td>
+                        <td class="p-3 text-sm text-gray-400">${time}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
         }
     </script>
 </body>
