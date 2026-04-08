@@ -15,13 +15,11 @@
             min-height: 100vh;
         }
 
-        /* Tùy chỉnh thanh cuộn */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #059669; }
 
-        /* Hiệu ứng kính mờ (Glassmorphism) */
         .glass-panel {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
@@ -43,7 +41,7 @@
                 <p class="text-gray-400 text-sm tracking-widest uppercase font-semibold">Admin Gateway</p>
             </div>
 
-            <form id="login-form" onsubmit="handleLogin(event)">
+            <div id="login-form">
                 <div class="mb-5">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Tài khoản Admin</label>
                     <input type="text" id="admin-user" required autocomplete="off"
@@ -60,27 +58,23 @@
                     Sai tài khoản hoặc mật khẩu!
                 </div>
 
-                <button type="submit" 
+                <button type="button" id="login-btn" onclick="handleLogin()"
                     class="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-emerald-500/30 transition-all duration-200 transform hover:-translate-y-0.5">
                     Đăng Nhập
                 </button>
-            </form>
+            </div>
         </div>
     </div>
 
     <div id="dashboard-section" class="hidden max-w-7xl mx-auto p-6">
-        
         <header class="glass-panel rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center shadow-lg border-l-4 border-emerald-500">
             <div>
-                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
-                    Dashboard
-                </h1>
+                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">Dashboard</h1>
                 <p class="text-gray-400 text-sm mt-1">Quản lý người chơi game SimpleFPS</p>
             </div>
             
             <div class="mt-4 md:mt-0 flex gap-4">
                 <button onclick="fetchPlayers()" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-5 py-2.5 rounded-lg shadow transition flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     Làm mới
                 </button>
                 <button onclick="logout()" class="bg-red-600/80 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg shadow transition">
@@ -101,40 +95,35 @@
                             <th class="p-5 font-semibold text-center">Hành động</th>
                         </tr>
                     </thead>
-                    <tbody id="player-table-body" class="divide-y divide-gray-700/50">
-                        </tbody>
+                    <tbody id="player-table-body" class="divide-y divide-gray-700/50"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
-        <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-md p-8 border border-emerald-500/50 transform transition-transform scale-100">
-            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <span class="text-emerald-400">⚙️</span> Chỉnh sửa người chơi
-            </h2>
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-md p-8 border border-emerald-500/50">
+            <h2 class="text-2xl font-bold text-white mb-6">⚙️ Chỉnh sửa người chơi</h2>
             <input type="hidden" id="edit-id">
             
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">Username</label>
-                    <input type="text" id="edit-username" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                    <input type="text" id="edit-username" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-white outline-none">
                 </div>
-                
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Vàng (Gold)</label>
-                    <input type="number" id="edit-gold" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-yellow-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Vàng</label>
+                    <input type="number" id="edit-gold" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-yellow-400 font-bold outline-none">
                 </div>
-                
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">Điểm Rank</label>
-                    <input type="number" id="edit-rank" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-blue-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                    <input type="number" id="edit-rank" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-blue-400 font-bold outline-none">
                 </div>
             </div>
             
             <div class="flex justify-end gap-3 mt-8">
                 <button onclick="closeModal('edit-modal')" class="hover:bg-gray-700 text-gray-300 px-5 py-2.5 rounded-lg transition">Hủy</button>
-                <button onclick="savePlayer()" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-bold text-white shadow-lg transition">Lưu thay đổi</button>
+                <button onclick="savePlayer()" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-bold text-white shadow-lg transition">Lưu</button>
             </div>
         </div>
     </div>
@@ -142,24 +131,21 @@
     <div id="history-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-cyan-500/50 flex flex-col max-h-[85vh]">
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
-                <h2 class="text-xl font-bold text-cyan-400 flex items-center gap-2" id="history-title">
-                    📊 Lịch sử đấu
-                </h2>
-                <button onclick="closeModal('history-modal')" class="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center transition">&times;</button>
+                <h2 class="text-xl font-bold text-cyan-400" id="history-title">📊 Lịch sử đấu</h2>
+                <button onclick="closeModal('history-modal')" class="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
             </div>
             
-            <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+            <div class="overflow-y-auto flex-1 pr-2">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider rounded-lg">
-                            <th class="p-4 rounded-l-lg">Kết quả</th>
-                            <th class="p-4">K/D (Kills/Deaths)</th>
+                            <th class="p-4">Kết quả</th>
+                            <th class="p-4">K/D</th>
                             <th class="p-4">Thời gian</th>
-                            <th class="p-4 rounded-r-lg">Ngày giờ</th>
+                            <th class="p-4">Ngày giờ</th>
                         </tr>
                     </thead>
-                    <tbody id="history-table-body" class="divide-y divide-gray-800/50 mt-2">
-                        </tbody>
+                    <tbody id="history-table-body" class="divide-y divide-gray-800/50 mt-2"></tbody>
                 </table>
             </div>
         </div>
@@ -167,20 +153,19 @@
 
     <script>
         const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
+        
+        // TIẾN NHỚ ĐỔI ĐOẠN KEY DƯỚI ĐÂY THÀNH KEY CỦA BẠN NHÉ (Bắt đầu bằng eyJ...)
+        const SUPABASE_ANON_KEY = 'DÁN_MÃ_API_KEY_CỦA_BẠN_VÀO_ĐÂY'; 
         
         let supabase;
 
         if (!window.supabase) {
-            alert("Không thể tải thư viện Supabase. Hãy kiểm tra kết nối mạng!");
+            alert("Lỗi: Không thể tải thư viện Supabase. Hãy kiểm tra kết nối mạng!");
         } else {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            
-            // Kiểm tra trạng thái đăng nhập khi load trang
             checkLoginState();
         }
 
-        // ================= LOGIC ĐĂNG NHẬP =================
         function checkLoginState() {
             const isLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
             if (isLoggedIn === 'true') {
@@ -188,12 +173,20 @@
             }
         }
 
-        async function handleLogin(e) {
-            e.preventDefault();
+        // HÀM ĐĂNG NHẬP MỚI
+        async function handleLogin() {
+            console.log("Đã bấm nút đăng nhập!"); // In ra để kiểm tra nút có hoạt động không
+            
             const user = document.getElementById('admin-user').value;
             const pass = document.getElementById('admin-pass').value;
             const errorMsg = document.getElementById('login-error');
-            const submitBtn = document.querySelector('#login-form button');
+            const submitBtn = document.getElementById('login-btn');
+
+            if (!user || !pass) {
+                errorMsg.innerText = "Vui lòng nhập đủ tài khoản và mật khẩu!";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
 
             // Reset UI
             errorMsg.classList.add('hidden');
@@ -201,7 +194,7 @@
             submitBtn.disabled = true;
 
             try {
-                // Truy vấn bảng admin_users
+                console.log("Đang gọi tới Supabase...");
                 const { data, error } = await supabase
                     .from('admin_users')
                     .select('*')
@@ -210,19 +203,20 @@
                     .single();
 
                 if (error) {
-                    // IN RA LỖI CHI TIẾT TỪ SUPABASE
-                    console.error("Lỗi Supabase:", error);
-                    errorMsg.innerHTML = `Lỗi hệ thống: <br><span class="text-xs text-yellow-300">${error.message}</span>`;
+                    console.error("LỖI SUPABASE TRẢ VỀ:", error);
+                    errorMsg.innerHTML = `Lỗi từ máy chủ: <br><span class="text-xs text-yellow-300">${error.message}</span>`;
                     errorMsg.classList.remove('hidden');
                 } else if (!data) {
+                    console.log("Không tìm thấy dữ liệu trùng khớp.");
                     errorMsg.innerText = "Sai tài khoản hoặc mật khẩu!";
                     errorMsg.classList.remove('hidden');
                 } else {
-                    // Đăng nhập thành công
+                    console.log("Đăng nhập thành công!");
                     sessionStorage.setItem('isAdminLoggedIn', 'true');
                     showDashboard();
                 }
             } catch (err) {
+                console.error("LỖI CODE HOẶC MẠNG:", err);
                 errorMsg.innerText = "Lỗi kết nối máy chủ!";
                 errorMsg.classList.remove('hidden');
             } finally {
@@ -235,7 +229,8 @@
             sessionStorage.removeItem('isAdminLoggedIn');
             document.getElementById('dashboard-section').classList.add('hidden');
             document.getElementById('login-section').classList.remove('hidden');
-            document.getElementById('login-form').reset();
+            document.getElementById('admin-user').value = '';
+            document.getElementById('admin-pass').value = '';
         }
 
         function showDashboard() {
@@ -244,7 +239,6 @@
             fetchPlayers();
         }
 
-        // ================= LOGIC DỮ LIỆU GAME =================
         async function fetchPlayers() {
             const tbody = document.getElementById('player-table-body');
             tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-emerald-400 animate-pulse">⏳ Đang đồng bộ dữ liệu...</td></tr>';
@@ -253,7 +247,7 @@
                 const { data, error } = await supabase.from('profiles').select('*').order('gold', { ascending: false });
                 
                 if (error) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 bg-red-500/10 rounded-lg">❌ Lỗi: ${error.message}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">❌ Lỗi: ${error.message}</td></tr>`;
                     return;
                 }
 
@@ -273,28 +267,12 @@
                             </div>
                             ${player.username}
                         </td>
-                        <td class="p-5">
-                            <span class="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-bold text-sm flex items-center gap-1 w-max">
-                                🪙 ${player.gold}
-                            </span>
-                        </td>
-                        <td class="p-5">
-                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full font-bold text-sm flex items-center gap-1 w-max">
-                                🏆 ${player.rank_points}
-                            </span>
-                        </td>
+                        <td class="p-5"><span class="bg-yellow-500/10 text-yellow-400 px-3 py-1 rounded-full font-bold text-sm">🪙 ${player.gold}</span></td>
+                        <td class="p-5"><span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full font-bold text-sm">🏆 ${player.rank_points}</span></td>
                         <td class="p-5 text-gray-400 text-sm">${player.current_character || 'Char_Adam'}</td>
                         <td class="p-5 text-center">
-                            <div class="flex items-center justify-center gap-2 opacity-80 group-hover:opacity-100 transition">
-                                <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" 
-                                    class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/50 px-3 py-1.5 rounded transition text-sm">
-                                    Sửa
-                                </button>
-                                <button onclick="viewHistory('${player.id}', '${player.username}')" 
-                                    class="bg-cyan-600/20 hover:bg-cyan-600 text-cyan-400 hover:text-white border border-cyan-500/50 px-3 py-1.5 rounded transition text-sm">
-                                    Lịch sử
-                                </button>
-                            </div>
+                            <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/50 px-3 py-1.5 rounded transition text-sm mr-2">Sửa</button>
+                            <button onclick="viewHistory('${player.id}', '${player.username}')" class="bg-cyan-600/20 hover:bg-cyan-600 text-cyan-400 hover:text-white border border-cyan-500/50 px-3 py-1.5 rounded transition text-sm">Lịch sử</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -318,17 +296,10 @@
             const gold = document.getElementById('edit-gold').value;
             const rank = document.getElementById('edit-rank').value;
 
-            const { error } = await supabase
-                .from('profiles')
-                .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
-                .eq('id', id);
+            const { error } = await supabase.from('profiles').update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) }).eq('id', id);
 
-            if (error) {
-                alert('❌ Lỗi cập nhật: ' + error.message);
-            } else {
-                closeModal('edit-modal');
-                fetchPlayers();
-            }
+            if (error) alert('❌ Lỗi cập nhật: ' + error.message);
+            else { closeModal('edit-modal'); fetchPlayers(); }
         }
 
         window.viewHistory = async function(userId, username) {
@@ -337,49 +308,22 @@
             const tbody = document.getElementById('history-table-body');
             tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-cyan-400 animate-pulse">Đang tải dữ liệu...</td></tr>';
 
-            const { data, error } = await supabase
-                .from('match_history')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(20);
+            const { data, error } = await supabase.from('match_history').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
 
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
-                return;
-            }
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có dữ liệu trận đấu.</td></tr>';
-                return;
-            }
+            if (error) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">Lỗi: ${error.message}</td></tr>`; return; }
+            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có dữ liệu trận đấu.</td></tr>'; return; }
 
             tbody.innerHTML = '';
             data.forEach(match => {
-                let isWin = match.result === 'Win';
-                let isLoss = match.result === 'Loss';
-                
-                let resultBadge = isWin 
-                    ? '<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-bold border border-emerald-500/30">THẮNG</span>' 
-                    : isLoss 
-                        ? '<span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-bold border border-red-500/30">THUA</span>'
-                        : '<span class="bg-gray-500/20 text-gray-400 px-2 py-1 rounded text-xs font-bold border border-gray-500/30">THOÁT</span>';
-                
+                let resultBadge = match.result === 'Win' ? '<span class="text-emerald-400 font-bold">THẮNG</span>' : match.result === 'Loss' ? '<span class="text-red-400 font-bold">THUA</span>' : '<span class="text-gray-400 font-bold">THOÁT</span>';
                 let time = new Date(match.created_at).toLocaleString('vi-VN');
                 let mins = Math.floor(match.play_time_seconds / 60);
                 let secs = Math.floor(match.play_time_seconds % 60);
 
-                // Tính K/D Ratio
-                let kdRatio = match.deaths > 0 ? (match.kills / match.deaths).toFixed(2) : match.kills;
-                let kdColor = kdRatio >= 1 ? 'text-emerald-400' : 'text-red-400';
-
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-800/30 transition">
                         <td class="p-4 mt-2">${resultBadge}</td>
-                        <td class="p-4">
-                            <span class="font-bold text-white">${match.kills}</span> / <span class="font-bold text-gray-400">${match.deaths}</span>
-                            <span class="text-xs ml-2 ${kdColor}">(${kdRatio})</span>
-                        </td>
+                        <td class="p-4"><span class="font-bold text-white">${match.kills}</span> / <span class="text-gray-400">${match.deaths}</span></td>
                         <td class="p-4 text-gray-300">${mins}p ${secs}s</td>
                         <td class="p-4 text-xs text-gray-500">${time}</td>
                     </tr>
@@ -387,9 +331,7 @@
             });
         }
 
-        window.closeModal = function(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
+        window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
     </script>
 </body>
 </html>
