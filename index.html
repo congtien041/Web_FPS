@@ -13,6 +13,7 @@
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #06b6d4; } /* Thanh cuộn màu xanh dương cho lịch sử */
     </style>
 </head>
 <body class="text-gray-100 antialiased">
@@ -52,45 +53,99 @@
                 <p class="text-gray-400 text-sm mt-1">Quản lý tài khoản SimpleFPS</p>
             </div>
             <div class="mt-4 md:mt-0 flex gap-4">
-                <button onclick="window.fetchPlayers()" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg border border-gray-600">Làm mới</button>
-                <button onclick="window.logout()" class="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg">Đăng Xuất</button>
+                <button onclick="window.fetchPlayers()" class="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2.5 rounded-lg border border-gray-600 transition">🔄 Làm mới</button>
+                <button onclick="window.logout()" class="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg transition">Đăng Xuất</button>
             </div>
         </header>
 
         <div class="glass-panel rounded-2xl shadow-xl overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-800 text-gray-300 text-xs uppercase tracking-wider">
-                        <th class="p-5">Username</th><th class="p-5">Tài Sản</th><th class="p-5">Rank Points</th><th class="p-5 text-center">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody id="player-table-body" class="divide-y divide-gray-700"></tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-800 text-gray-300 text-xs uppercase tracking-wider">
+                            <th class="p-5 font-semibold">Username</th>
+                            <th class="p-5 font-semibold">Vàng</th>
+                            <th class="p-5 font-semibold">Rank Points</th>
+                            <th class="p-5 font-semibold">Nhân vật</th>
+                            <th class="p-5 font-semibold text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-table-body" class="divide-y divide-gray-700"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-md p-8 border border-emerald-500">
+            <h2 class="text-2xl font-bold text-emerald-400 mb-6">⚙️ Chỉnh sửa người chơi</h2>
+            <input type="hidden" id="edit-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Username</label>
+                    <input type="text" id="edit-username" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Vàng (Gold)</label>
+                    <input type="number" id="edit-gold" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-yellow-400 font-bold focus:border-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Điểm Rank</label>
+                    <input type="number" id="edit-rank" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-blue-400 font-bold focus:border-emerald-500 outline-none">
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="window.closeModal('edit-modal')" class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-5 py-2.5 rounded-lg transition">Hủy</button>
+                <button onclick="window.savePlayer()" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-bold text-white shadow-lg transition">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-cyan-500 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-cyan-400" id="history-title">📊 Lịch sử đấu</h2>
+                <button onclick="window.closeModal('history-modal')" class="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center transition">&times;</button>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-800/80 text-gray-300 text-xs uppercase tracking-wider rounded-lg">
+                            <th class="p-4 rounded-l-lg">Kết quả</th>
+                            <th class="p-4">K/D</th>
+                            <th class="p-4">Thời gian chơi</th>
+                            <th class="p-4 rounded-r-lg">Ngày giờ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="divide-y divide-gray-800 mt-2"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-        // 1. Dùng window.db thay vì let để tránh lỗi "already declared" khi dán trùng code
+        // CẤU HÌNH SUPABASE
         window.dbURL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
         
-        window.dbKey = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB'; 
+        // TIẾN NHỚ ĐỔI DÒNG DƯỚI THÀNH MÃ API KEY CHUẨN CỦA BẠN (bắt đầu bằng eyJ...)
+        window.dbKey = 'DÁN_MÃ_API_KEY_CỦA_BẠN_VÀO_ĐÂY'; 
         
-        // 2. Khởi tạo Supabase an toàn
+        // KHỞI TẠO
         if (window.supabase) {
             window.db = window.supabase.createClient(window.dbURL, window.dbKey);
-            
-            // Tự động vào bảng điều khiển nếu đã đăng nhập trước đó
             if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
                 window.fetchPlayers();
             }
         } else {
-            document.getElementById('login-error').innerText = "LỖI MẠNG: Không tải được thư viện Supabase!";
-            document.getElementById('login-error').classList.remove('hidden');
+            alert("LỖI: Không tải được thư viện Supabase. Vui lòng kiểm tra mạng!");
         }
 
-        // 3. Hàm Đăng Nhập
+        // --- ĐĂNG NHẬP / ĐĂNG XUẤT ---
         window.handleLogin = async function() {
             const user = document.getElementById('admin-user').value;
             const pass = document.getElementById('admin-pass').value;
@@ -98,46 +153,33 @@
             const btn = document.getElementById('login-btn');
 
             if (!user || !pass) {
-                errorMsg.innerText = "Chưa nhập đủ thông tin kìa Tiến ơi!";
-                errorMsg.classList.remove('hidden');
-                return;
+                errorMsg.innerText = "Vui lòng nhập đủ tài khoản và mật khẩu!";
+                errorMsg.classList.remove('hidden'); return;
             }
 
             errorMsg.classList.add('hidden');
-            btn.innerText = "Đang kiểm tra...";
-            btn.disabled = true;
+            btn.innerText = "Đang kiểm tra..."; btn.disabled = true;
 
             try {
-                // Gọi vào bảng admin_users
-                const { data, error } = await window.db.from('admin_users')
-                    .select('*')
-                    .eq('username', user)
-                    .eq('password', pass)
-                    .single();
+                const { data, error } = await window.db.from('admin_users').select('*').eq('username', user).eq('password', pass).single();
 
                 if (error) {
-                    errorMsg.innerText = "Lỗi Database: " + error.message;
-                    errorMsg.classList.remove('hidden');
+                    errorMsg.innerText = "Lỗi Database: " + error.message; errorMsg.classList.remove('hidden');
                 } else if (!data) {
-                    errorMsg.innerText = "Sai tài khoản hoặc mật khẩu!";
-                    errorMsg.classList.remove('hidden');
+                    errorMsg.innerText = "Sai tài khoản hoặc mật khẩu!"; errorMsg.classList.remove('hidden');
                 } else {
-                    // Đăng nhập thành công
                     sessionStorage.setItem('isAdminLoggedIn', 'true');
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('dashboard-section').classList.remove('hidden');
                     window.fetchPlayers();
                 }
             } catch (err) {
-                errorMsg.innerText = "Lỗi máy chủ/mạng: " + err.message;
-                errorMsg.classList.remove('hidden');
+                errorMsg.innerText = "Lỗi hệ thống: " + err.message; errorMsg.classList.remove('hidden');
             } finally {
-                btn.innerText = "Đăng Nhập";
-                btn.disabled = false;
+                btn.innerText = "Đăng Nhập"; btn.disabled = false;
             }
         };
 
-        // 4. Hàm Đăng Xuất
         window.logout = function() {
             sessionStorage.removeItem('isAdminLoggedIn');
             document.getElementById('dashboard-section').classList.add('hidden');
@@ -146,25 +188,19 @@
             document.getElementById('admin-pass').value = '';
         };
 
-        // 5. Hàm Tải Dữ Liệu
+        // --- TẢI DỮ LIỆU NGƯỜI CHƠI ---
         window.fetchPlayers = async function() {
             const tbody = document.getElementById('player-table-body');
-            tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-emerald-400">Đang tải dữ liệu người chơi...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-emerald-400">Đang đồng bộ dữ liệu...</td></tr>';
             try {
                 const { data, error } = await window.db.from('profiles').select('*').order('gold', { ascending: false });
                 
-                if (error) { 
-                    tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">LỖI DATABASE: ${error.message}</td></tr>`; 
-                    return; 
-                }
-                
-                if (!data || data.length === 0) { 
-                    tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có người chơi nào.</td></tr>`; 
-                    return; 
-                }
+                if (error) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">Lỗi: ${error.message}</td></tr>`; return; }
+                if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">Chưa có người chơi nào.</td></tr>`; return; }
                 
                 tbody.innerHTML = '';
                 data.forEach(player => {
+                    const charName = player.current_character || 'Char_Adam';
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-800/50 transition">
                             <td class="p-5 font-bold text-white flex items-center gap-3">
@@ -173,15 +209,89 @@
                                 </div>
                                 ${player.username}
                             </td>
-                            <td class="p-5"><span class="bg-yellow-500/10 text-yellow-400 px-3 py-1 rounded-full font-bold text-sm">🪙 ${player.gold}</span></td>
-                            <td class="p-5"><span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full font-bold text-sm">🏆 ${player.rank_points}</span></td>
-                            <td class="p-5 text-center text-gray-400 text-sm">Tính năng sửa đang được ẩn tạm thời</td>
+                            <td class="p-5"><span class="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full font-bold text-sm">🪙 ${player.gold}</span></td>
+                            <td class="p-5"><span class="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-bold text-sm">🏆 ${player.rank_points}</span></td>
+                            <td class="p-5 text-gray-400 text-sm">${charName}</td>
+                            <td class="p-5 text-center">
+                                <button onclick="window.openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/50 px-3 py-1.5 rounded transition text-sm mr-2">Sửa</button>
+                                <button onclick="window.viewHistory('${player.id}', '${player.username}')" class="bg-cyan-600/20 hover:bg-cyan-600 text-cyan-400 hover:text-white border border-cyan-500/50 px-3 py-1.5 rounded transition text-sm">Lịch sử</button>
+                            </td>
                         </tr>
                     `;
                 });
-            } catch (err) { 
-                tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">LỖI JAVASCRIPT: ${err.message}</td></tr>`; 
+            } catch (err) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">Lỗi web: ${err.message}</td></tr>`; }
+        };
+
+        // --- CÁC HÀM MODAL (SỬA & LỊCH SỬ) ---
+        window.openEditModal = function(id, username, gold, rank) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-username').value = username;
+            document.getElementById('edit-gold').value = gold;
+            document.getElementById('edit-rank').value = rank;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        };
+
+        window.savePlayer = async function() {
+            const id = document.getElementById('edit-id').value;
+            const username = document.getElementById('edit-username').value;
+            const gold = document.getElementById('edit-gold').value;
+            const rank = document.getElementById('edit-rank').value;
+
+            const { error } = await window.db.from('profiles')
+                .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
+                .eq('id', id);
+
+            if (error) {
+                alert('❌ Lỗi cập nhật: ' + error.message);
+            } else {
+                window.closeModal('edit-modal');
+                window.fetchPlayers();
             }
+        };
+
+        window.viewHistory = async function(userId, username) {
+            document.getElementById('history-title').innerHTML = `📊 Lịch sử đấu: <span class="text-white">${username}</span>`;
+            document.getElementById('history-modal').classList.remove('hidden');
+            
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-cyan-400">Đang tải dữ liệu...</td></tr>';
+
+            const { data, error } = await window.db.from('match_history')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">Lỗi: ${error.message}</td></tr>`; return; }
+            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500">Người chơi này chưa tham gia trận nào.</td></tr>'; return; }
+
+            tbody.innerHTML = '';
+            data.forEach(match => {
+                let isWin = match.result === 'Win';
+                let isLoss = match.result === 'Loss';
+                
+                // Format kết quả siêu ngầu
+                let resultBadge = isWin ? '<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-bold border border-emerald-500/30">THẮNG</span>' 
+                                : isLoss ? '<span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-bold border border-red-500/30">THUA</span>'
+                                : '<span class="bg-gray-500/20 text-gray-400 px-2 py-1 rounded text-xs font-bold border border-gray-500/30">THOÁT</span>';
+                
+                let time = new Date(match.created_at).toLocaleString('vi-VN');
+                let mins = Math.floor(match.play_time_seconds / 60);
+                let secs = Math.floor(match.play_time_seconds % 60);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/30 transition">
+                        <td class="p-4">${resultBadge}</td>
+                        <td class="p-4 font-bold"><span class="text-white">${match.kills}</span> <span class="text-gray-500">/</span> <span class="text-gray-400">${match.deaths}</span></td>
+                        <td class="p-4 text-gray-300">${mins}p ${secs}s</td>
+                        <td class="p-4 text-xs text-gray-500">${time}</td>
+                    </tr>
+                `;
+            });
         };
     </script>
 </body>
