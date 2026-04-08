@@ -1,85 +1,164 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Trị SimpleFPS</title>
+    <title>SimpleFPS - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Tùy chỉnh thanh cuộn cho đẹp */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+            min-height: 100vh;
+        }
+
+        /* Tùy chỉnh thanh cuộn */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #059669; }
+
+        /* Hiệu ứng kính mờ (Glassmorphism) */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans antialiased p-6">
+<body class="text-gray-100 antialiased selection:bg-emerald-500 selection:text-white">
 
-    <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            <h1 class="text-3xl font-bold text-emerald-400">SimpleFPS Admin Dashboard</h1>
-            <button onclick="fetchPlayers()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded shadow transition">
-                🔄 Làm mới dữ liệu
-            </button>
-        </div>
+    <div id="login-section" class="flex min-h-screen items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl w-full max-w-md border-t-4 border-emerald-500 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500 rounded-full blur-3xl opacity-20"></div>
+            
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 mb-2">
+                    SimpleFPS
+                </h1>
+                <p class="text-gray-400 text-sm tracking-widest uppercase font-semibold">Admin Gateway</p>
+            </div>
 
-        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-700 text-gray-300 text-sm uppercase tracking-wider">
-                        <th class="p-4">Username</th>
-                        <th class="p-4">Vàng</th>
-                        <th class="p-4">Rank Points</th>
-                        <th class="p-4">Nhân vật đang dùng</th>
-                        <th class="p-4 text-center">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody id="player-table-body" class="divide-y divide-gray-700">
-                    <tr><td colspan="5" class="p-4 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
-                </tbody>
-            </table>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Tài khoản Admin</label>
+                    <input type="text" id="admin-user" required autocomplete="off"
+                        class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Mật khẩu</label>
+                    <input type="password" id="admin-pass" required
+                        class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition">
+                </div>
+
+                <div id="login-error" class="hidden mb-4 p-3 bg-red-500/20 border border-red-500 text-red-400 text-sm rounded-lg text-center">
+                    Sai tài khoản hoặc mật khẩu!
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-emerald-500/30 transition-all duration-200 transform hover:-translate-y-0.5">
+                    Đăng Nhập
+                </button>
+            </form>
         </div>
     </div>
 
-    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md p-6 border border-emerald-500">
-            <h2 class="text-xl font-bold text-emerald-400 mb-4">Chỉnh sửa người chơi</h2>
-            <input type="hidden" id="edit-id">
-            
-            <label class="block text-sm text-gray-400 mb-1">Username</label>
-            <input type="text" id="edit-username" class="w-full bg-gray-900 border border-gray-600 rounded p-2 mb-4 text-white focus:border-emerald-500 outline-none">
-            
-            <label class="block text-sm text-gray-400 mb-1">Vàng</label>
-            <input type="number" id="edit-gold" class="w-full bg-gray-900 border border-gray-600 rounded p-2 mb-4 text-white focus:border-emerald-500 outline-none">
-            
-            <label class="block text-sm text-gray-400 mb-1">Điểm Rank</label>
-            <input type="number" id="edit-rank" class="w-full bg-gray-900 border border-gray-600 rounded p-2 mb-6 text-white focus:border-emerald-500 outline-none">
-            
-            <div class="flex justify-end gap-3">
-                <button onclick="closeModal('edit-modal')" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded">Hủy</button>
-                <button onclick="savePlayer()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold text-white">Lưu thay đổi</button>
+    <div id="dashboard-section" class="hidden max-w-7xl mx-auto p-6">
+        
+        <header class="glass-panel rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center shadow-lg border-l-4 border-emerald-500">
+            <div>
+                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
+                    Dashboard
+                </h1>
+                <p class="text-gray-400 text-sm mt-1">Quản lý người chơi game SimpleFPS</p>
             </div>
-        </div>
-    </div>
+            
+            <div class="mt-4 md:mt-0 flex gap-4">
+                <button onclick="fetchPlayers()" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-5 py-2.5 rounded-lg shadow transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Làm mới
+                </button>
+                <button onclick="logout()" class="bg-red-600/80 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg shadow transition">
+                    Đăng Xuất
+                </button>
+            </div>
+        </header>
 
-    <div id="history-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-3xl p-6 border border-blue-500 flex flex-col max-h-[80vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-blue-400" id="history-title">Lịch sử đấu</h2>
-                <button onclick="closeModal('history-modal')" class="text-gray-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            
-            <div class="overflow-y-auto flex-1 pr-2">
+        <div class="glass-panel rounded-2xl shadow-xl overflow-hidden">
+            <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-gray-700 text-gray-300 text-sm">
-                            <th class="p-3">Kết quả</th>
-                            <th class="p-3">Kills/Deaths</th>
-                            <th class="p-3">Thời gian chơi</th>
-                            <th class="p-3">Ngày giờ</th>
+                        <tr class="bg-gray-800/80 text-gray-300 text-xs uppercase tracking-wider border-b border-gray-700">
+                            <th class="p-5 font-semibold">Username</th>
+                            <th class="p-5 font-semibold">Tài Sản</th>
+                            <th class="p-5 font-semibold">Rank Points</th>
+                            <th class="p-5 font-semibold">Nhân vật</th>
+                            <th class="p-5 font-semibold text-center">Hành động</th>
                         </tr>
                     </thead>
-                    <tbody id="history-table-body" class="divide-y divide-gray-700">
+                    <tbody id="player-table-body" class="divide-y divide-gray-700/50">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+        <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-md p-8 border border-emerald-500/50 transform transition-transform scale-100">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <span class="text-emerald-400">⚙️</span> Chỉnh sửa người chơi
+            </h2>
+            <input type="hidden" id="edit-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Username</label>
+                    <input type="text" id="edit-username" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Vàng (Gold)</label>
+                    <input type="number" id="edit-gold" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-yellow-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Điểm Rank</label>
+                    <input type="number" id="edit-rank" class="w-full bg-gray-900/80 border border-gray-600 rounded-lg p-3 text-blue-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="closeModal('edit-modal')" class="hover:bg-gray-700 text-gray-300 px-5 py-2.5 rounded-lg transition">Hủy</button>
+                <button onclick="savePlayer()" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-bold text-white shadow-lg transition">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-cyan-500/50 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-cyan-400 flex items-center gap-2" id="history-title">
+                    📊 Lịch sử đấu
+                </h2>
+                <button onclick="closeModal('history-modal')" class="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center transition">&times;</button>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider rounded-lg">
+                            <th class="p-4 rounded-l-lg">Kết quả</th>
+                            <th class="p-4">K/D (Kills/Deaths)</th>
+                            <th class="p-4">Thời gian</th>
+                            <th class="p-4 rounded-r-lg">Ngày giờ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="divide-y divide-gray-800/50 mt-2">
                         </tbody>
                 </table>
             </div>
@@ -90,131 +169,221 @@
         const SUPABASE_URL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB';
         
-        // Kiểm tra xem thư viện Supabase đã load được chưa
+        let supabase;
+
         if (!window.supabase) {
-            document.getElementById('player-table-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">LỖI: Không thể tải thư viện Supabase. Hãy kiểm tra kết nối mạng hoặc tắt tiện ích chặn quảng cáo (Adblocker).</td></tr>';
+            alert("Không thể tải thư viện Supabase. Hãy kiểm tra kết nối mạng!");
         } else {
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            // Tải danh sách người chơi khi mở web
-            fetchPlayers();
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            // Kiểm tra trạng thái đăng nhập khi load trang
+            checkLoginState();
+        }
 
-            async function fetchPlayers() {
-                const tbody = document.getElementById('player-table-body');
-                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-emerald-400">Đang tải dữ liệu...</td></tr>';
-                
-                try {
-                    const { data, error } = await supabase.from('profiles').select('*').order('gold', { ascending: false });
-                    
-                    if (error) {
-                        console.error("Lỗi Supabase:", error);
-                        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Lỗi từ máy chủ Supabase: ${error.message}</td></tr>`;
-                        return;
-                    }
-
-                    // NẾU BẢNG TRỐNG (DO VỪA CHẠY LỆNH DROP TABLE)
-                    if (!data || data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-yellow-400 font-bold">Chưa có người chơi nào trong hệ thống!<br><span class="text-sm text-gray-400">Hãy mở game lên và đăng ký 1 tài khoản mới nhé.</span></td></tr>`;
-                        return;
-                    }
-
-                    tbody.innerHTML = '';
-                    data.forEach(player => {
-                        const tr = document.createElement('tr');
-                        tr.className = 'hover:bg-gray-750 transition duration-150';
-                        tr.innerHTML = `
-                            <td class="p-4 font-bold text-white">${player.username}</td>
-                            <td class="p-4 text-yellow-400 font-bold">${player.gold}</td>
-                            <td class="p-4 text-blue-400 font-bold">${player.rank_points}</td>
-                            <td class="p-4 text-gray-300">${player.current_character || 'Char_Adam'}</td>
-                            <td class="p-4 text-center">
-                                <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded mr-2">Sửa</button>
-                                <button onclick="viewHistory('${player.id}', '${player.username}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">Lịch sử</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } catch (err) {
-                    console.error("Lỗi mã Javascript:", err);
-                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">Lỗi kĩ thuật: ${err.message}</td></tr>`;
-                }
+        // ================= LOGIC ĐĂNG NHẬP =================
+        function checkLoginState() {
+            const isLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
+            if (isLoggedIn === 'true') {
+                showDashboard();
             }
+        }
 
-            // Mở bảng Sửa
-            window.openEditModal = function(id, username, gold, rank) {
-                document.getElementById('edit-id').value = id;
-                document.getElementById('edit-username').value = username;
-                document.getElementById('edit-gold').value = gold;
-                document.getElementById('edit-rank').value = rank;
-                document.getElementById('edit-modal').classList.remove('hidden');
-            }
+        async function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('admin-user').value;
+            const pass = document.getElementById('admin-pass').value;
+            const errorMsg = document.getElementById('login-error');
+            const submitBtn = document.querySelector('#login-form button');
 
-            // Lưu thông tin chỉnh sửa lên database
-            window.savePlayer = async function() {
-                const id = document.getElementById('edit-id').value;
-                const username = document.getElementById('edit-username').value;
-                const gold = document.getElementById('edit-gold').value;
-                const rank = document.getElementById('edit-rank').value;
+            // Reset UI
+            errorMsg.classList.add('hidden');
+            submitBtn.innerText = 'Đang kiểm tra...';
+            submitBtn.disabled = true;
 
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
-                    .eq('id', id);
-
-                if (error) {
-                    alert('Lỗi cập nhật: ' + error.message);
-                } else {
-                    closeModal('edit-modal');
-                    fetchPlayers(); // Tải lại bảng sau khi lưu
-                }
-            }
-
-            // Mở bảng Lịch sử trận đấu
-            window.viewHistory = async function(userId, username) {
-                document.getElementById('history-title').innerText = `Lịch sử đấu của: ${username}`;
-                document.getElementById('history-modal').classList.remove('hidden');
-                const tbody = document.getElementById('history-table-body');
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-blue-400">Đang tìm dữ liệu...</td></tr>';
-
+            try {
+                // Truy vấn bảng admin_users
                 const { data, error } = await supabase
-                    .from('match_history')
+                    .from('admin_users')
                     .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
+                    .eq('username', user)
+                    .eq('password', pass)
+                    .single();
 
+                if (error || !data) {
+                    errorMsg.innerText = "Sai tài khoản hoặc mật khẩu!";
+                    errorMsg.classList.remove('hidden');
+                } else {
+                    // Đăng nhập thành công -> Lưu session để không phải đăng nhập lại nếu f5
+                    sessionStorage.setItem('isAdminLoggedIn', 'true');
+                    showDashboard();
+                }
+            } catch (err) {
+                errorMsg.innerText = "Lỗi kết nối máy chủ!";
+                errorMsg.classList.remove('hidden');
+            } finally {
+                submitBtn.innerText = 'Đăng Nhập';
+                submitBtn.disabled = false;
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            document.getElementById('dashboard-section').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+        }
+
+        function showDashboard() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            fetchPlayers();
+        }
+
+        // ================= LOGIC DỮ LIỆU GAME =================
+        async function fetchPlayers() {
+            const tbody = document.getElementById('player-table-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-emerald-400 animate-pulse">⏳ Đang đồng bộ dữ liệu...</td></tr>';
+            
+            try {
+                const { data, error } = await supabase.from('profiles').select('*').order('gold', { ascending: false });
+                
                 if (error) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 bg-red-500/10 rounded-lg">❌ Lỗi: ${error.message}</td></tr>`;
                     return;
                 }
 
-                if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Người chơi này chưa đánh trận nào.</td></tr>';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">Chưa có dữ liệu người chơi.</td></tr>`;
                     return;
                 }
 
                 tbody.innerHTML = '';
-                data.forEach(match => {
-                    let resultColor = match.result === 'Win' ? 'text-emerald-400' : (match.result === 'Quit' ? 'text-red-400' : 'text-gray-400');
-                    let resultText = match.result === 'Win' ? 'THẮNG' : (match.result === 'Quit' ? 'THOÁT' : 'THUA');
-                    let time = new Date(match.created_at).toLocaleString('vi-VN');
-                    
-                    let mins = Math.floor(match.play_time_seconds / 60);
-                    let secs = Math.floor(match.play_time_seconds % 60);
-
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-gray-750">
-                            <td class="p-3 font-bold ${resultColor}">${resultText}</td>
-                            <td class="p-3">${match.kills} / ${match.deaths}</td>
-                            <td class="p-3">${mins}m ${secs}s</td>
-                            <td class="p-3 text-sm text-gray-400">${time}</td>
-                        </tr>
+                data.forEach(player => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-800/50 transition duration-200 group';
+                    tr.innerHTML = `
+                        <td class="p-5 font-bold text-white flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-xs shadow-lg">
+                                ${player.username.charAt(0).toUpperCase()}
+                            </div>
+                            ${player.username}
+                        </td>
+                        <td class="p-5">
+                            <span class="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-bold text-sm flex items-center gap-1 w-max">
+                                🪙 ${player.gold}
+                            </span>
+                        </td>
+                        <td class="p-5">
+                            <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full font-bold text-sm flex items-center gap-1 w-max">
+                                🏆 ${player.rank_points}
+                            </span>
+                        </td>
+                        <td class="p-5 text-gray-400 text-sm">${player.current_character || 'Char_Adam'}</td>
+                        <td class="p-5 text-center">
+                            <div class="flex items-center justify-center gap-2 opacity-80 group-hover:opacity-100 transition">
+                                <button onclick="openEditModal('${player.id}', '${player.username}', ${player.gold}, ${player.rank_points})" 
+                                    class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/50 px-3 py-1.5 rounded transition text-sm">
+                                    Sửa
+                                </button>
+                                <button onclick="viewHistory('${player.id}', '${player.username}')" 
+                                    class="bg-cyan-600/20 hover:bg-cyan-600 text-cyan-400 hover:text-white border border-cyan-500/50 px-3 py-1.5 rounded transition text-sm">
+                                    Lịch sử
+                                </button>
+                            </div>
+                        </td>
                     `;
+                    tbody.appendChild(tr);
                 });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">Lỗi web: ${err.message}</td></tr>`;
+            }
+        }
+
+        window.openEditModal = function(id, username, gold, rank) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-username').value = username;
+            document.getElementById('edit-gold').value = gold;
+            document.getElementById('edit-rank').value = rank;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        window.savePlayer = async function() {
+            const id = document.getElementById('edit-id').value;
+            const username = document.getElementById('edit-username').value;
+            const gold = document.getElementById('edit-gold').value;
+            const rank = document.getElementById('edit-rank').value;
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
+                .eq('id', id);
+
+            if (error) {
+                alert('❌ Lỗi cập nhật: ' + error.message);
+            } else {
+                closeModal('edit-modal');
+                fetchPlayers();
+            }
+        }
+
+        window.viewHistory = async function(userId, username) {
+            document.getElementById('history-title').innerHTML = `📊 Lịch sử đấu: <span class="text-white">${username}</span>`;
+            document.getElementById('history-modal').classList.remove('hidden');
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-cyan-400 animate-pulse">Đang tải dữ liệu...</td></tr>';
+
+            const { data, error } = await supabase
+                .from('match_history')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">Lỗi: ${error.message}</td></tr>`;
+                return;
             }
 
-            window.closeModal = function(modalId) {
-                document.getElementById(modalId).classList.add('hidden');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có dữ liệu trận đấu.</td></tr>';
+                return;
             }
+
+            tbody.innerHTML = '';
+            data.forEach(match => {
+                let isWin = match.result === 'Win';
+                let isLoss = match.result === 'Loss';
+                
+                let resultBadge = isWin 
+                    ? '<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-bold border border-emerald-500/30">THẮNG</span>' 
+                    : isLoss 
+                        ? '<span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-bold border border-red-500/30">THUA</span>'
+                        : '<span class="bg-gray-500/20 text-gray-400 px-2 py-1 rounded text-xs font-bold border border-gray-500/30">THOÁT</span>';
+                
+                let time = new Date(match.created_at).toLocaleString('vi-VN');
+                let mins = Math.floor(match.play_time_seconds / 60);
+                let secs = Math.floor(match.play_time_seconds % 60);
+
+                // Tính K/D Ratio
+                let kdRatio = match.deaths > 0 ? (match.kills / match.deaths).toFixed(2) : match.kills;
+                let kdColor = kdRatio >= 1 ? 'text-emerald-400' : 'text-red-400';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/30 transition">
+                        <td class="p-4 mt-2">${resultBadge}</td>
+                        <td class="p-4">
+                            <span class="font-bold text-white">${match.kills}</span> / <span class="font-bold text-gray-400">${match.deaths}</span>
+                            <span class="text-xs ml-2 ${kdColor}">(${kdRatio})</span>
+                        </td>
+                        <td class="p-4 text-gray-300">${mins}p ${secs}s</td>
+                        <td class="p-4 text-xs text-gray-500">${time}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
         }
     </script>
 </body>
