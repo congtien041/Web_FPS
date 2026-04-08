@@ -209,11 +209,16 @@
                     .eq('password', pass)
                     .single();
 
-                if (error || !data) {
+                if (error) {
+                    // IN RA LỖI CHI TIẾT TỪ SUPABASE
+                    console.error("Lỗi Supabase:", error);
+                    errorMsg.innerHTML = `Lỗi hệ thống: <br><span class="text-xs text-yellow-300">${error.message}</span>`;
+                    errorMsg.classList.remove('hidden');
+                } else if (!data) {
                     errorMsg.innerText = "Sai tài khoản hoặc mật khẩu!";
                     errorMsg.classList.remove('hidden');
                 } else {
-                    // Đăng nhập thành công -> Lưu session để không phải đăng nhập lại nếu f5
+                    // Đăng nhập thành công
                     sessionStorage.setItem('isAdminLoggedIn', 'true');
                     showDashboard();
                 }
