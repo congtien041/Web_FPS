@@ -231,17 +231,23 @@
             }, 3000);
         };
 
-        // --- 3. KHỞI TẠO HỆ THỐNG ---
-        if (window.supabase) {
-            window.db = window.supabase.createClient(window.dbURL, window.dbKey);
-            if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                window.fetchPlayers();
+        // --- BƯỚC 3 ĐƯỢC CHUYỂN XUỐNG ĐÂY: KHỞI TẠO HỆ THỐNG SAU KHI ĐÃ ĐỌC HẾT CÁC HÀM ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.supabase) {
+                window.db = window.supabase.createClient(window.dbURL, window.dbKey);
+                
+                // Kiểm tra xem đã đăng nhập chưa
+                if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
+                    document.getElementById('login-section').classList.add('hidden');
+                    document.getElementById('dashboard-section').classList.remove('hidden');
+                    
+                    // Lúc này hàm fetchPlayers đã được định nghĩa ở trên, gọi sẽ không bị lỗi nữa
+                    window.fetchPlayers(); 
+                }
+            } else {
+                alert("LỖI: Không tải được thư viện Supabase. Vui lòng kiểm tra mạng!");
             }
-        } else {
-            alert("LỖI: Không tải được thư viện Supabase. Vui lòng kiểm tra mạng!");
-        }
+        });
 
         // --- 4. HÀM ĐĂNG NHẬP ---
         window.handleLogin = async function() {
