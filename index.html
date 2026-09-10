@@ -77,8 +77,9 @@
 
             <div class="space-y-5">
                 <div>
-                    <label class="block text-sm text-gray-300 mb-2 font-medium">Tài khoản Quản trị</label>
-                    <input type="text" id="admin-user" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none transition duration-200" autocomplete="off">
+                    <!-- Đổi nhãn thành Email -->
+                    <label class="block text-sm text-gray-300 mb-2 font-medium">Email Quản trị</label>
+                    <input type="email" id="admin-user" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none transition duration-200" autocomplete="off">
                 </div>
                 
                 <div>
@@ -130,6 +131,8 @@
                         <tr class="bg-gray-800 text-gray-300 text-xs uppercase tracking-wider border-b border-gray-700">
                             <th class="p-5 font-semibold">Tài khoản</th>
                             <th class="p-5 font-semibold">Tài Sản (Vàng)</th>
+                            <!-- THÊM CỘT KIM CƯƠNG -->
+                            <th class="p-5 font-semibold">Kim Cương</th>
                             <th class="p-5 font-semibold">Xếp Hạng (RP)</th>
                             <th class="p-5 font-semibold">Nhân vật</th>
                             <th class="p-5 font-semibold text-center">Thao tác</th>
@@ -154,9 +157,16 @@
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">Tên hiển thị</label>
                     <input type="text" id="edit-username" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1.5">Vàng hiện có</label>
-                    <input type="number" id="edit-gold" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-yellow-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Vàng</label>
+                        <input type="number" id="edit-gold" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-yellow-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition">
+                    </div>
+                    <!-- THÊM Ô NHẬP KIM CƯƠNG -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Kim Cương</label>
+                        <input type="number" id="edit-diamonds" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-purple-400 font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">Điểm Rank (RP)</label>
@@ -174,6 +184,7 @@
         </div>
     </div>
 
+    <!-- Modal Lịch sử (giữ nguyên) -->
     <div id="history-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="glass-panel rounded-2xl shadow-2xl w-full max-w-3xl p-0 flex flex-col max-h-[85vh] animated-border-cyan border-cyan-500 overflow-hidden animate-pop">
             <div class="bg-gray-800/80 p-5 flex justify-between items-center border-b border-gray-700">
@@ -203,13 +214,10 @@
     </div>
 
     <script>
-        // --- 1. XÓA BỎ MỌI BIẾN LET/CONST BÊN NGOÀI ĐỂ CHỐNG LỖI TRÙNG LẶP ---
+        // CẤU HÌNH DB
         window.dbURL = 'https://ebdytrnnavfvgjkjysqr.supabase.co';
-        
-        // TIẾN ĐIỀN KEY CỦA BẠN VÀO ĐÂY (bắt đầu bằng eyJ...):
-        window.dbKey = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB'; 
+        window.dbKey = 'sb_publishable_0ONS0ziLjfkpkL96Bt-kHg_pBcgw_aB'; // Dùng khóa Public an toàn tuyệt đối
 
-        // --- 2. HÀM THÔNG BÁO ---
         window.showToast = function(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -231,17 +239,15 @@
             }, 3000);
         };
 
-        // --- BƯỚC 3 ĐƯỢC CHUYỂN XUỐNG ĐÂY: KHỞI TẠO HỆ THỐNG SAU KHI ĐÃ ĐỌC HẾT CÁC HÀM ---
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             if (window.supabase) {
                 window.db = window.supabase.createClient(window.dbURL, window.dbKey);
                 
-                // Kiểm tra xem đã đăng nhập chưa
-                if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
+                // Kiểm tra đăng nhập với Auth thực sự
+                const { data: { session } } = await window.db.auth.getSession();
+                if (session) {
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('dashboard-section').classList.remove('hidden');
-                    
-                    // Lúc này hàm fetchPlayers đã được định nghĩa ở trên, gọi sẽ không bị lỗi nữa
                     window.fetchPlayers(); 
                 }
             } else {
@@ -249,7 +255,7 @@
             }
         });
 
-        // --- 4. HÀM ĐĂNG NHẬP ---
+        // HÀM ĐĂNG NHẬP BẰNG SUPABASE AUTH
         window.handleLogin = async function() {
             const user = document.getElementById('admin-user').value;
             const pass = document.getElementById('admin-pass').value;
@@ -262,27 +268,46 @@
             btn.disabled = true;
 
             try {
-                const { data, error } = await window.db.from('admin_users').select('*').eq('username', user).eq('password', pass).single();
+                // 1. Đăng nhập bằng Auth
+                const { data, error } = await window.db.auth.signInWithPassword({
+                    email: user,
+                    password: pass
+                });
 
-                if (error || !data) {
-                    window.showToast("Sai tài khoản hoặc mật khẩu!", "error");
+                if (error) {
+                    window.showToast("Sai email hoặc mật khẩu!", "error");
                     btn.innerHTML = originalBtnHtml; btn.disabled = false;
-                } else {
-                    window.showToast("Đăng nhập thành công!", "success");
-                    sessionStorage.setItem('isAdminLoggedIn', 'true');
-                    document.getElementById('login-section').classList.add('hidden');
-                    document.getElementById('dashboard-section').classList.remove('hidden');
-                    window.fetchPlayers();
+                    return;
                 }
+
+                // 2. Kiểm tra xem user này có quyền Admin không (nằm trong bảng admin_roles)
+                const { data: adminData, error: adminError } = await window.db
+                    .from('admin_roles')
+                    .select('*')
+                    .eq('user_id', data.user.id)
+                    .single();
+
+                if (adminError || !adminData) {
+                    window.showToast("Tài khoản này không có quyền Quản trị!", "error");
+                    await window.db.auth.signOut();
+                    btn.innerHTML = originalBtnHtml; btn.disabled = false;
+                    return;
+                }
+
+                window.showToast("Đăng nhập thành công!", "success");
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                window.fetchPlayers();
+                
             } catch (err) {
                 window.showToast("Lỗi hệ thống kết nối!", "error");
                 btn.innerHTML = originalBtnHtml; btn.disabled = false;
             }
         };
 
-        // --- 5. HÀM ĐĂNG XUẤT ---
-        window.logout = function() {
-            sessionStorage.removeItem('isAdminLoggedIn');
+        // HÀM ĐĂNG XUẤT AUTH
+        window.logout = async function() {
+            await window.db.auth.signOut(); // Xóa phiên đăng nhập thật sự
             document.getElementById('dashboard-section').classList.add('hidden');
             document.getElementById('login-section').classList.remove('hidden');
             document.getElementById('admin-user').value = '';
@@ -290,78 +315,86 @@
             window.showToast("Đã đăng xuất an toàn");
         };
 
-        // --- 6. HÀM TẢI DỮ LIỆU ---
+        // HÀM TẢI DỮ LIỆU
         window.fetchPlayers = async function() {
-    const tbody = document.getElementById('player-table-body');
-    tbody.innerHTML = `<tr><td colspan="5" class="p-16 text-center"><svg class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-emerald-400 font-medium tracking-widest uppercase text-xs">Đang đồng bộ Data...</span></td></tr>`;
-    
-    try {
-        const { data, error } = await window.db.from('profiles').select('*').order('gold', { ascending: false });
-        
-        if (error) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 bg-red-500/10">Lỗi: ${error.message}</td></tr>`; return; }
-        if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">Chưa có dữ liệu người chơi.</td></tr>`; return; }
-        
-        tbody.innerHTML = '';
-        data.forEach((player, index) => {
-            const delay = index * 0.05;
+            const tbody = document.getElementById('player-table-body');
+            tbody.innerHTML = `<tr><td colspan="6" class="p-16 text-center"><svg class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-emerald-400 font-medium tracking-widest uppercase text-xs">Đang đồng bộ Data...</span></td></tr>`;
             
-            // --- XỬ LÝ DỮ LIỆU AN TOÀN TRÁNH BỊ NULL/UNDEFINED ---
-            const charName = player.current_character || 'Char_Adam';
-            const userName = player.username || 'Unknown';
-            const firstLetter = userName.charAt(0).toUpperCase();
-            const gold = (player.gold != null) ? player.gold : 0; 
-            const rankPoints = (player.rank_points != null) ? player.rank_points : 0;
-            // -----------------------------------------------------
+            try {
+                const { data, error } = await window.db.from('profiles').select('*').order('gold', { ascending: false });
+                
+                if (error) { tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-red-500 bg-red-500/10">Lỗi: ${error.message}</td></tr>`; return; }
+                if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Chưa có dữ liệu người chơi.</td></tr>`; return; }
+                
+                tbody.innerHTML = '';
+                data.forEach((player, index) => {
+                    const delay = index * 0.05;
+                    const charName = player.current_character || 'Char_Adam';
+                    const userName = player.username || 'Unknown';
+                    const firstLetter = userName.charAt(0).toUpperCase();
+                    
+                    const gold = (player.gold != null) ? player.gold : 0; 
+                    const diamonds = (player.diamonds != null) ? player.diamonds : 0; // ĐỌC KIM CƯƠNG
+                    const rankPoints = (player.rank_points != null) ? player.rank_points : 0;
 
-            tbody.innerHTML += `
-                <tr class="hover:bg-gray-800/60 transition-colors animate-row" style="animation-delay: ${delay}s">
-                    <td class="p-5 font-bold text-white flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-sm shadow-inner text-emerald-400">
-                            ${firstLetter}
-                        </div>
-                        ${userName}
-                    </td>
-                    <td class="p-5">
-                        <span class="inline-flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-3 py-1.5 rounded-lg font-bold text-sm">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 5h2v2H9V5zm0 4h2v6H9V9z"></path></svg>
-                            ${gold.toLocaleString('vi-VN')}
-                        </span>
-                    </td>
-                    <td class="p-5">
-                        <span class="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg font-bold text-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                            ${rankPoints.toLocaleString('vi-VN')}
-                        </span>
-                    </td>
-                    <td class="p-5">
-                        <span class="bg-gray-900/80 text-gray-300 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium">${charName}</span>
-                    </td>
-                    <td class="p-5 text-center">
-                        <div class="flex justify-center gap-2">
-                            <button onclick="window.openEditModal('${player.id}', '${userName}', ${gold}, ${rankPoints})" class="bg-gray-800 hover:bg-emerald-600 text-gray-300 hover:text-white border border-gray-700 hover:border-emerald-500 px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-1.5" title="Sửa">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                <span class="text-sm">Sửa</span>
-                            </button>
-                            <button onclick="window.viewHistory('${player.id}', '${userName}')" class="bg-gray-800 hover:bg-cyan-600 text-gray-300 hover:text-white border border-gray-700 hover:border-cyan-500 px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-1.5" title="Lịch sử">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                                <span class="text-sm">LS</span>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-    } catch (err) { 
-        console.error("Chi tiết lỗi JS:", err); // In lỗi thực tế ra F12
-        window.showToast("Lỗi xử lý dữ liệu! Mở F12 để xem chi tiết.", "error"); 
-    }
-};
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-800/60 transition-colors animate-row" style="animation-delay: ${delay}s">
+                            <td class="p-5 font-bold text-white flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-sm shadow-inner text-emerald-400">
+                                    ${firstLetter}
+                                </div>
+                                ${userName}
+                            </td>
+                            <td class="p-5">
+                                <span class="inline-flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-3 py-1.5 rounded-lg font-bold text-sm">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 5h2v2H9V5zm0 4h2v6H9V9z"></path></svg>
+                                    ${gold.toLocaleString('vi-VN')}
+                                </span>
+                            </td>
+                            <!-- HIỂN THỊ KIM CƯƠNG -->
+                            <td class="p-5">
+                                <span class="inline-flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-3 py-1.5 rounded-lg font-bold text-sm">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 12l10 10 10-10L12 2zm0 3.5l6.5 6.5-6.5 6.5-6.5-6.5L12 5.5z"/></svg>
+                                    ${diamonds.toLocaleString('vi-VN')}
+                                </span>
+                            </td>
+                            <td class="p-5">
+                                <span class="inline-flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg font-bold text-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                                    ${rankPoints.toLocaleString('vi-VN')}
+                                </span>
+                            </td>
+                            <td class="p-5">
+                                <span class="bg-gray-900/80 text-gray-300 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium">${charName}</span>
+                            </td>
+                            <td class="p-5 text-center">
+                                <div class="flex justify-center gap-2">
+                                    <!-- CẬP NHẬT HÀM GỌI CÓ KIM CƯƠNG -->
+                                    <button onclick="window.openEditModal('${player.id}', '${userName}', ${gold}, ${diamonds}, ${rankPoints})" class="bg-gray-800 hover:bg-emerald-600 text-gray-300 hover:text-white border border-gray-700 hover:border-emerald-500 px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-1.5" title="Sửa">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <span class="text-sm">Sửa</span>
+                                    </button>
+                                    <button onclick="window.viewHistory('${player.id}', '${userName}')" class="bg-gray-800 hover:bg-cyan-600 text-gray-300 hover:text-white border border-gray-700 hover:border-cyan-500 px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-1.5" title="Lịch sử">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                        <span class="text-sm">LS</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) { 
+                console.error("Lỗi:", err);
+                window.showToast("Lỗi xử lý dữ liệu!", "error"); 
+            }
+        };
 
-        // --- 7. CÁC HÀM MODAL CHỈNH SỬA ---
-        window.openEditModal = function(id, username, gold, rank) {
+        // HÀM MỞ MODAL SỬA
+        window.openEditModal = function(id, username, gold, diamonds, rank) {
             document.getElementById('edit-id').value = id;
             document.getElementById('edit-username').value = username;
             document.getElementById('edit-gold').value = gold;
+            document.getElementById('edit-diamonds').value = diamonds; // Set Kim Cương
             document.getElementById('edit-rank').value = rank;
             document.getElementById('edit-modal').classList.remove('hidden');
         };
@@ -370,14 +403,21 @@
             document.getElementById(modalId).classList.add('hidden');
         };
 
+        // HÀM LƯU DỮ LIỆU
         window.savePlayer = async function() {
             const id = document.getElementById('edit-id').value;
             const username = document.getElementById('edit-username').value;
             const gold = document.getElementById('edit-gold').value;
+            const diamonds = document.getElementById('edit-diamonds').value; // Lấy dữ liệu Kim Cương
             const rank = document.getElementById('edit-rank').value;
 
             const { error } = await window.db.from('profiles')
-                .update({ username: username, gold: parseInt(gold), rank_points: parseInt(rank) })
+                .update({ 
+                    username: username, 
+                    gold: parseInt(gold), 
+                    diamonds: parseInt(diamonds), // Gửi Kim Cương lên database
+                    rank_points: parseInt(rank) 
+                })
                 .eq('id', id);
 
             if (error) {
@@ -389,7 +429,7 @@
             }
         };
 
-        // --- 8. HÀM XEM LỊCH SỬ ---
+        // HÀM XEM LỊCH SỬ (Giữ nguyên)
         window.viewHistory = async function(userId, username) {
             document.getElementById('history-title').innerHTML = `
                 <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
